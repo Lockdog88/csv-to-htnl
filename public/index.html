@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV to HTML Table</title>
+</head>
+<body>
+
+<input type="file" id="csvFileInput" accept=".csv">
+<button onclick="convertCSVToHTMLTable()">Convert</button>
+<div id="tableContainer"></div>
+<button onclick="saveHTML()">Save HTML</button>
+
+<script>
+function convertCSVToHTMLTable() {
+    const input = document.getElementById('csvFileInput');
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n').map(line => line.split(','));
+        const headers = lines.shift();
+
+        let html = '<table>';
+        html += '<tr>' + headers.map(header => `<th>${header}</th>`).join('') + '</tr>';
+        lines.forEach(line => {
+            html += '<tr>' + line.map((cell, index) => {
+                if (index === 0) { // Assuming column 0 contains the image URL
+                    // Modify the URL to get the actual image link
+                    // This is where you'd apply logic based on your specific scenario
+                    const actualImageUrl = modifyImageUrl(cell);
+                    return `<td><img src="${actualImageUrl}" alt="Image"></td>`;
+                } else {
+                    return `<td>${cell}</td>`;
+                }
+            }).join('') + '</tr>';
+        });
+        html += '</table>';
+
+        document.getElementById('tableContainer').innerHTML = html;
+    };
+
+    reader.readAsText(file);
+}
+
+async function modifyImageUrl(url) {
+    try {
+        const response = await fetch(`/resolveImage?imageUrl=${encodeURIComponent(url)}`);
+        const data = await response.json();
+        return data.actualImageUrl;
+    } catch (error) {
+        console.error("Error modifying image URL:", error);
+        return url; // Fallback to the original URL if there's an error
+    }
+}
+
+function saveHTML() {
+    const html = document.getElementById('tableContainer').innerHTML;
+    const blob = new Blob([html], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'table.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
+
+</body>
+</html>
